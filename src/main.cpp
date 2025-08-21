@@ -234,9 +234,7 @@ static void visualize(const std::vector<unsigned char*> images, const UniAD::Ker
 
 std::shared_ptr<UniAD::Kernel> create_kernel(const std::string& engine_pth1, const std::string& engine_pth2, const std::string& engine_pth3) {
     UniAD::KernelParams params;
-    params.trt_engine1 = engine_pth1;
-    params.trt_engine2 = engine_pth2;
-    params.trt_engine3 = engine_pth3;
+    params.trt_engine = engine_pth1;
     std::shared_ptr<UniAD::Kernel> instance = std::make_shared<UniAD::KernelImplement>();
     instance->init(params);
     return instance;
@@ -384,39 +382,6 @@ int main(int argc, char** argv) {
         inputs[input_id].data_ptrs["max_obj_id"] = inputs[input_id].max_obj_id.data();
     }
 
-    /*std::cerr << "KernelInput Shapes:\n";
-
-    std::cerr << "  prev_track_intances0: {" << inputs[0].prev_track_intances0.size() / 512 << " x 512}\n";
-    std::cerr << "  prev_track_intances1: {" << inputs[0].prev_track_intances1.size() / 3 << " x 3}\n";
-    std::cerr << "  prev_track_intances3: {" << inputs[0].prev_track_intances3.size() << "}\n";
-    std::cerr << "  prev_track_intances4: {" << inputs[0].prev_track_intances4.size() << "}\n";
-    std::cerr << "  prev_track_intances5: {" << inputs[0].prev_track_intances5.size() << "}\n";
-    std::cerr << "  prev_track_intances6: {" << inputs[0].prev_track_intances6.size() << "}\n";
-    std::cerr << "  prev_track_intances8: {" << inputs[0].prev_track_intances8.size() << "}\n";
-    std::cerr << "  prev_track_intances9: {" << inputs[0].prev_track_intances9.size() / 10 << " x 10}\n";
-    std::cerr << "  prev_track_intances11: {" << inputs[0].prev_track_intances11.size() / (4 * 256) << " x 4 x 256}\n";
-    std::cerr << "  prev_track_intances12: {" << inputs[0].prev_track_intances12.size() / 4 << " x 4}\n";
-    std::cerr << "  prev_track_intances13: {" << inputs[0].prev_track_intances13.size() << "}\n";
-
-    std::cerr << "  prev_timestamp: {" << inputs[0].prev_timestamp.size() << "}\n";
-    std::cerr << "  prev_l2g_r_mat: {1 x 3 x 3}\n";
-    std::cerr << "  prev_l2g_t: {1 x 3}\n";
-
-    std::cerr << "  prev_bev: {" << inputs[0].prev_bev.size() / (1 * 256) << " x 1 x 256}\n";
-
-    std::cerr << "  timestamp: {" << inputs[0].timestamp.size() << "}\n";
-    std::cerr << "  l2g_r_mat: {1 x 3 x 3}\n";
-    std::cerr << "  l2g_t: {1 x 3}\n";
-
-    std::cerr << "  img: {" << inputs[0].img.size() / (6 * 3 * 928 * 1600) << " x 6 x 3 x 928 x 1600}\n";
-    std::cerr << "  img_metas_can_bus: {" << inputs[0].img_metas_can_bus.size() << "}\n";
-    std::cerr << "  img_metas_lidar2img: {" << inputs[0].img_metas_lidar2img.size() / (6 * 4 * 4) << " x 6 x 4 x 4}\n";
-
-    std::cerr << "  command: {" << inputs[0].command.size() << "}\n";
-    std::cerr << "  use_prev_bev: {" << inputs[0].use_prev_bev.size() << "}\n";
-    std::cerr << "  max_obj_id: {" << inputs[0].max_obj_id.size() << "}\n";*/
-
-
     // warmup
     UniAD::KernelOutput dummy_output;
     printf("[INFO] engine wram-up start\n");
@@ -435,7 +400,6 @@ int main(int argc, char** argv) {
         if (i > 0) temporal_info_assign(inputs[i], outputs[outputs.size()-1]);
         cudaStreamSynchronize(stream);
         kernel->forward_one_frame(inputs[i], _output, true, stream);
-        kernel_2->forward_one_frame(inputs[i], _output, true, stream);
         cudaStreamSynchronize(stream);
         outputs.push_back(_output);
     }

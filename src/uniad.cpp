@@ -37,54 +37,47 @@ KernelImplement::~KernelImplement() {
 int KernelImplement::init(const KernelParams& param) {
   param_ = param;
   // deserialization trt engine
-  engine1 = TensorRT::load(param_.trt_engine1);
-  engine2 = TensorRT::load(param_.trt_engine2);
-  engine3 = TensorRT::load(param_.trt_engine3);
-  std::vector<std::shared_ptr<TensorRT::Engine>> engines = {engine1, engine2, engine3};
-  int i = 0;
-  for ( std::shared_ptr<TensorRT::Engine> engine_ : engines){
-    if (engine_ == nullptr) {
-      if (i== 0) printf("[ERROR] Can not load TRT engine at %s.\n", param.trt_engine1.c_str());
-      else if (i== 1) printf("[ERROR] Can not load TRT engine at %s.\n", param.trt_engine2.c_str());
-      else if (i== 2) printf("[ERROR] Can not load TRT engine at %s.\n", param.trt_engine3.c_str());
-      return -1;
-    }
-    // malloc the device and host memory, need to be free in deconstructor
-    TRT_INT_TYPE _shape_product;
-    size_t _dsize;
-    for (int ib=0; ib<engine_->num_bindings(); ++ib) {
-      void *_ptr_device=nullptr;
-      void *_ptr_host=nullptr;
-      std::vector<TRT_INT_TYPE> _shape;
-      const std::string bindingName = engine_->get_binding_name(ib);
-      if (engine_->is_input(ib)) {
-        ++param_.num_inputs;
-        // prepare input
-        _shape = param_.input_max_shapes[bindingName];
-        _shape_product = std::accumulate(_shape.begin(), _shape.end(), 1, std::multiplies<TRT_INT_TYPE>());
-        _dsize = sizeof(engine_->dtype(bindingName));
-        checkRuntime(cudaMalloc(&_ptr_device, _shape_product * _dsize));
-        checkRuntime(cudaMallocHost(&_ptr_host, _shape_product * _dsize));
-        inputs_device_.push_back(_ptr_device);
-        inputs_host_.push_back(_ptr_host);
-      } else {
-        // prepare output
-        _shape = param_.output_max_shapes[bindingName];
-        _shape_product = std::accumulate(_shape.begin(), _shape.end(), 1, std::multiplies<TRT_INT_TYPE>());
-        _dsize = sizeof(engine_->dtype(bindingName));
-        checkRuntime(cudaMalloc(&_ptr_device, _shape_product * _dsize));
-        checkRuntime(cudaMallocHost(&_ptr_host, _shape_product * _dsize));
-        outputs_device_.push_back(_ptr_device);
-        outputs_host_.push_back(_ptr_host);
-      }
-      bindings_.emplace(std::make_pair(bindingName, _ptr_device));
-    }
-    
+  engine_ = TensorRT::load(param_.trt_engine);
+  if (engine_ == nullptr) {
+    printf("[ERROR] Can not load TRT engine at %s.\n", param.trt_engine.c_str());
+    return -1;
   }
+  // malloc the device and host memory, need to be free in deconstructor
+  TRT_INT_TYPE _shape_product;
+  size_t _dsize;
+  for (int ib=0; ib<engine_->num_bindings(); ++ib) {
+    void *_ptr_device=nullptr;
+    void *_ptr_host=nullptr;
+    std::vector<TRT_INT_TYPE> _shape;
+    const std::string bindingName = engine_->get_binding_name(ib);
+    if (engine_->is_input(ib)) {
+      ++param_.num_inputs;
+      // prepare input
+      _shape = param_.input_max_shapes[bindingName];
+      _shape_product = std::accumulate(_shape.begin(), _shape.end(), 1, std::multiplies<TRT_INT_TYPE>());
+      _dsize = sizeof(engine_->dtype(bindingName));
+      checkRuntime(cudaMalloc(&_ptr_device, _shape_product * _dsize));
+      checkRuntime(cudaMallocHost(&_ptr_host, _shape_product * _dsize));
+      inputs_device_.push_back(_ptr_device);
+      inputs_host_.push_back(_ptr_host);
+    } else {
+      // prepare output
+      _shape = param_.output_max_shapes[bindingName];
+      _shape_product = std::accumulate(_shape.begin(), _shape.end(), 1, std::multiplies<TRT_INT_TYPE>());
+      _dsize = sizeof(engine_->dtype(bindingName));
+      checkRuntime(cudaMalloc(&_ptr_device, _shape_product * _dsize));
+      checkRuntime(cudaMallocHost(&_ptr_host, _shape_product * _dsize));
+      outputs_device_.push_back(_ptr_device);
+      outputs_host_.push_back(_ptr_host);
+    }
+    bindings_.emplace(std::make_pair(bindingName, _ptr_device));
+  }
+    
+  
   
   return 0;
 }
-/*
+
 void KernelImplement::forward_timer(const UniAD::KernelInput& inputs, UniAD::KernelOutput& outputs, void *stream, bool enable_timer) {
   cudaStream_t _stream = static_cast<cudaStream_t>(stream);
   TRT_INT_TYPE _shape_product;
@@ -107,9 +100,9 @@ void KernelImplement::forward_timer(const UniAD::KernelInput& inputs, UniAD::Ker
   std::cerr <<  "before forward  " << std::endl;
   size_t free_mem, total_mem;
   cudaMemGetInfo(&free_mem, &total_mem);
-  std::cout << "GPU Free/Total: " << free_mem << " / " << total_mem << std::endl;
+  //std::cout << "GPU Free/Total: " << free_mem << " / " << total_mem << std::endl;
   int res = engine_->forward(bindings_, DDSOutputShapes, _stream, enable_timer, timer_);
-  std::cerr <<  "after forward  " << res << std::endl;
+  //std::cerr <<  "after forward  " << res << std::endl;
   // copy the output back to host and post process
   for (int ib=0; ib<engine_->num_bindings(); ++ib) {
     if (!engine_->is_input(ib)) {
@@ -140,11 +133,9 @@ void KernelImplement::forward_timer(const UniAD::KernelInput& inputs, UniAD::Ker
 void KernelImplement::forward_one_frame(const UniAD::KernelInput& inputs, UniAD::KernelOutput& outputs, bool enable_timer, void *stream) {
   this->forward_timer(inputs, outputs, stream, enable_timer);
   return;
-} */
+} 
 void KernelImplement::print_info() {
   printf("UniAD TRT engine.\n");
-  engine1->print("UniAD");
-  engine2->print("UniAD");
-  engine3->print("UniAD");
+  engine_->print("UniAD");
 }
 }; // namespace UniAD

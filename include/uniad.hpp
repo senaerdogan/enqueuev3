@@ -39,9 +39,7 @@
 namespace UniAD {
 
 struct KernelParams {
-  std::string trt_engine1;
-  std::string trt_engine2;
-  std::string trt_engine3;
+  std::string trt_engine;
   int num_inputs = 0;
   std::unordered_map<std::string, std::vector<TRT_INT_TYPE>> input_max_shapes = {
     {"prev_track_intances0", {TRACK_INS_MAX, 512}},
@@ -262,8 +260,8 @@ class Kernel {
  public:
   virtual ~Kernel() {};
   virtual int init(const KernelParams& param) = 0;
-  //virtual void forward_timer(const UniAD::KernelInput& inputs, UniAD::KernelOutput& outputs, void *stream, bool enable_timer) = 0;
-  //virtual void forward_one_frame(const UniAD::KernelInput& inputs, UniAD::KernelOutput& outputs, bool enable_timer, void *stream) = 0;
+  virtual void forward_timer(const UniAD::KernelInput& inputs, UniAD::KernelOutput& outputs, void *stream, bool enable_timer) = 0;
+  virtual void forward_one_frame(const UniAD::KernelInput& inputs, UniAD::KernelOutput& outputs, bool enable_timer, void *stream) = 0;
   virtual void print_info() = 0;
 };
 
@@ -271,15 +269,13 @@ class KernelImplement : public Kernel {
 public:
   virtual ~KernelImplement();
   virtual int init(const KernelParams& param);
-  //virtual void forward_timer(const UniAD::KernelInput& inputs, UniAD::KernelOutput& outputs, void *stream, bool enable_timer);
-  //virtual void forward_one_frame(const UniAD::KernelInput& inputs, UniAD::KernelOutput& outputs, bool enable_timer, void *stream);
+  virtual void forward_timer(const UniAD::KernelInput& inputs, UniAD::KernelOutput& outputs, void *stream, bool enable_timer);
+  virtual void forward_one_frame(const UniAD::KernelInput& inputs, UniAD::KernelOutput& outputs, bool enable_timer, void *stream);
   virtual void print_info();
 private:
   KernelParams param_;
   nv::EventTimer timer_;
-  std::shared_ptr<TensorRT::Engine> engine1;
-  std::shared_ptr<TensorRT::Engine> engine2;
-  std::shared_ptr<TensorRT::Engine> engine3;
+  std::shared_ptr<TensorRT::Engine> engine_;
   std::unordered_map<std::string, const void *> bindings_;
   std::vector<void *> inputs_device_;
   std::vector<void *> outputs_device_;
